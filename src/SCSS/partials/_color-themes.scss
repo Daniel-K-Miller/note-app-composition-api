@@ -1,0 +1,36 @@
+@import "../variables/colors.scss";
+
+$bg: 'bg';
+
+$themes: (
+  default: (
+    bg: palegoldenrod,
+    text: black
+  ),
+  light: (
+    bg: $light,
+    text: $dark
+  ),
+  dark: (
+    bg: $dark,
+    text: $light
+  )
+);
+
+@mixin themed() {
+  @each $theme, $map in $themes {
+    .theme--#{$theme} & {
+      $theme-map: () !global;
+      @each $key, $submap in $map {
+        $value: map-get(map-get($themes, $theme), '#{$key}');
+        $theme-map: map-merge($theme-map, ($key: $value)) !global;
+      }
+      @content;
+      $theme-map: null !global;
+    }
+  }
+}
+
+@function t($key) {
+  @return map-get($theme-map, $key);
+}

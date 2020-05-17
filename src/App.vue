@@ -1,5 +1,9 @@
 <template>
-  <div id="app">
+  <div id="app" :data-theme="themeText.toLowerCase()">
+    <ToggleSwitch 
+      :text="'Enable Dark Mode'"
+      @changeTheme="themeChange"
+    />
     <form>
       <h1>Another Notepad</h1>
       <p>Title</p>
@@ -44,7 +48,6 @@
       </section>
       <button @click="createNote" type="submit" form>Add Note</button>
     </form>
-
     <Note
       v-for="(note, index) in notes"
       :key="`note-${index}`"
@@ -60,17 +63,41 @@
 </template>
 
 <script>
-import { reactive, watchEffect } from "@vue/composition-api";
+import { reactive, ref, onBeforeMount } from "@vue/composition-api";
 import Note from "./components/Note.vue";
+import ToggleSwitch from "./components/ToggleSwitch.vue"
+import { store } from "./Vuex/store";
 
 export default {
   name: "App",
   components: {
-    Note
+    Note,
+    ToggleSwitch
   },
   setup() {
-    // note side
+    // theme mode
 
+    let isDarkModeRef = ref(false);
+
+    const themeChange = () => {
+      store.dispatch("toggleDarkMode", !store.getters.darkMode);
+    }
+    
+    let themeText = ref(store.getters.darkMode === true ? "Dark" : "Light");
+
+    onBeforeMount(() => {
+      store.subscribe((mutation, state) => {
+        if (mutation.type === "DARK_MODE_UPDATED") {
+          if (state.isDarkMode === true) {
+            themeText.value = "Dark";
+          } else if (state.isDarkMode === false) {
+            themeText.value = "Light";
+          }
+        }
+      })
+    })
+
+    // note side
     const note = reactive({
       header: "",
       body: "",
@@ -95,6 +122,7 @@ export default {
     const clearFields = () => {
       note.header = "";
       note.body = "";
+      note.level = null;
     };
 
     const levels = {
@@ -112,21 +140,44 @@ export default {
       notes.array.splice(notes.array.length);
     };
 
-    watchEffect(() => {});
-
     return {
       note,
       notes: notes.array,
       createNote,
       clearFields,
       levels,
-      onChildClick
+      onChildClick,
+      themeText,
+      isDarkModeRef,
+      themeChange
     };
   }
 };
 </script>
 
-<style>
+<style lang="scss">
+:root {
+  --dark: #141414;
+  --light: #dbdbdb;
+
+  [data-theme="light"] {
+  --bg-color: var(--light);
+  --text-color: var(--dark);
+  }
+
+  [data-theme="dark"] {
+  --bg-color: var(--dark);
+  --text-color: var(--light);
+  }
+}
+
+@import "./SCSS/partials/_color-themes.scss";
+* {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
